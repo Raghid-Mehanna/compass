@@ -58,9 +58,14 @@ DOWNLOAD_DELAY = 1
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    "compass_scraper.pipelines.CompassScraperPipeline": 300,
-#}
+ITEM_PIPELINES = {
+    "compass_scraper.pipelines.MongoPipeline": 300,
+}
+
+# MongoDB connection settings
+MONGO_URI = "mongodb://localhost:27017"
+MONGO_DB = "compass"
+MONGO_COLLECTION = "jobs"
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
