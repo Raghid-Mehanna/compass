@@ -25,6 +25,7 @@ class JobItem(scrapy.Item):
     title = scrapy.Field()
     url = scrapy.Field()
     domain = scrapy.Field()         # parsed from URL; may be None
+    company = scrapy.Field()        # populated where the source exposes it (e.g. weworkremotely); None for HN
 
     # Metadata
     scraped_at = scrapy.Field()     # ISO 8601 UTC timestamp
