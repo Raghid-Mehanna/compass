@@ -1,11 +1,31 @@
-# Scrapy settings for compass_scraper project
-#
-# For simplicity, this file contains only settings considered important or
-# commonly used. You can find more settings consulting the documentation:
-#
-#     https://docs.scrapy.org/en/latest/topics/settings.html
-#     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+"""
+Scrapy settings for compass_scraper.
+
+All tunables — Mongo connection, user-agent, throttle, log level — are loaded
+from environment variables (see .env.example). Hardcoded values are avoided
+so the same code is portable between local dev and CI/prod.
+"""
+
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load .env if present (project root is two levels up from this file).
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(PROJECT_ROOT / ".env")
+
+
+# --- Structured (JSON) logging ---
+# Install the JSON handler immediately, before any Scrapy/Twisted/library code
+# has a chance to log. LOG_ENABLED=False (below) tells Scrapy not to install
+# its own plain-text handler that would otherwise compete with ours.
+from compass_scraper.logging_setup import configure_json_logging  # noqa: E402
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_ENABLED = False  # we install our own handler in logging_setup
+configure_json_logging(level=LOG_LEVEL)
+
 
 BOT_NAME = "compass_scraper"
 
@@ -15,92 +35,37 @@ NEWSPIDER_MODULE = "compass_scraper.spiders"
 ADDONS = {}
 
 
-# Crawl responsibly by identifying yourself (and your website) on the user-agent
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-
-# Obey robots.txt rules
+# --- Scraping behavior (env-driven, with defensible defaults) ---
+USER_AGENT = os.getenv(
+    "USER_AGENT",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+)
 ROBOTSTXT_OBEY = True
+CONCURRENT_REQUESTS_PER_DOMAIN = int(os.getenv("CONCURRENT_REQUESTS_PER_DOMAIN", "1"))
+DOWNLOAD_DELAY = float(os.getenv("DOWNLOAD_DELAY", "1"))
 
-# Concurrency and throttling settings
-#CONCURRENT_REQUESTS = 16
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 1
 
-# Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
-
-# Disable Telnet Console (enabled by default)
-#TELNETCONSOLE_ENABLED = False
-
-# Override the default request headers:
-#DEFAULT_REQUEST_HEADERS = {
-#    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-#    "Accept-Language": "en",
-#}
-
-# Enable or disable spider middlewares
-# See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
-#    "compass_scraper.middlewares.CompassScraperSpiderMiddleware": 543,
-#}
-
-# Enable or disable downloader middlewares
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    "compass_scraper.middlewares.CompassScraperDownloaderMiddleware": 543,
-#}
-
-# Enable or disable extensions
-# See https://docs.scrapy.org/en/latest/topics/extensions.html
-#EXTENSIONS = {
-#    "scrapy.extensions.telnet.TelnetConsole": None,
-#}
-
-# Configure item pipelines
-# See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+# --- Pipelines ---
 ITEM_PIPELINES = {
     "compass_scraper.pipelines.MongoPipeline": 300,
 }
 
-# MongoDB connection settings
-MONGO_URI = "mongodb://localhost:27017"
-MONGO_DB = "compass"
-MONGO_COLLECTION = "jobs"
 
-# Enable and configure the AutoThrottle extension (disabled by default)
-# See https://docs.scrapy.org/en/latest/topics/autothrottle.html
-#AUTOTHROTTLE_ENABLED = True
-# The initial download delay
-#AUTOTHROTTLE_START_DELAY = 5
-# The maximum download delay to be set in case of high latencies
-#AUTOTHROTTLE_MAX_DELAY = 60
-# The average number of requests Scrapy should be sending in parallel to
-# each remote server
-#AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
-# Enable showing throttling stats for every response received:
-#AUTOTHROTTLE_DEBUG = False
+# --- MongoDB (env-driven) ---
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_DB = os.getenv("MONGO_DB", "compass")
+MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "jobs")
 
-# Enable and configure HTTP caching (disabled by default)
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-#HTTPCACHE_ENABLED = True
-#HTTPCACHE_EXPIRATION_SECS = 0
-#HTTPCACHE_DIR = "httpcache"
-#HTTPCACHE_IGNORE_HTTP_CODES = []
-#HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
-# Set settings whose default value is deprecated to a future-proof value
+# --- Encoding ---
 FEED_EXPORT_ENCODING = "utf-8"
 
-# --- Playwright (for JS-rendered sources, e.g. YC Work at a Startup) ---
-# Playwright is async, so Scrapy needs the asyncio-compatible reactor.
-TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
-# Route http/https through Playwright's handler. Plain Scrapy requests
-# (HN, WeWorkRemotely) fall through to the default downloader; only
-# requests with meta={"playwright": True} actually launch a browser.
+# --- Playwright (for JS-rendered sources, e.g. YC Work at a Startup) ---
+TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 DOWNLOAD_HANDLERS = {
     "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
     "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
 }
-
 PLAYWRIGHT_BROWSER_TYPE = "chromium"
