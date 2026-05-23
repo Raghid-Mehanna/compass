@@ -90,3 +90,17 @@ MONGO_COLLECTION = "jobs"
 
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"
+
+# --- Playwright (for JS-rendered sources, e.g. YC Work at a Startup) ---
+# Playwright is async, so Scrapy needs the asyncio-compatible reactor.
+TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+
+# Route http/https through Playwright's handler. Plain Scrapy requests
+# (HN, WeWorkRemotely) fall through to the default downloader; only
+# requests with meta={"playwright": True} actually launch a browser.
+DOWNLOAD_HANDLERS = {
+    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+}
+
+PLAYWRIGHT_BROWSER_TYPE = "chromium"
