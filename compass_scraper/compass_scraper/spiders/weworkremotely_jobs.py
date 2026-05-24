@@ -21,8 +21,8 @@ class WeWorkRemotelyJobsSpider(scrapy.Spider):
                 continue
 
             post_id = href.rsplit("/", 1)[-1]
-            company_raw = li.css('a[target="company"] span.font-bold::text').get()
-            company = company_raw.replace("\xa0", " ").strip() if company_raw else None
+            company_raw = li.css("p.new-listing__company-name::text").get()
+            company = company_raw.strip() if company_raw else None
             title = li.css("span.new-listing__header__title__text::text").get()
             absolute_url = response.urljoin(href)
 
