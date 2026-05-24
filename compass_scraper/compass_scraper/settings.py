@@ -45,9 +45,32 @@ ROBOTSTXT_OBEY = True
 CONCURRENT_REQUESTS_PER_DOMAIN = int(os.getenv("CONCURRENT_REQUESTS_PER_DOMAIN", "1"))
 DOWNLOAD_DELAY = float(os.getenv("DOWNLOAD_DELAY", "1"))
 
+# Browser-realistic headers. WWR (Cloudflare-protected) 403s Scrapy's default
+# Accept-* headers because their compact form (e.g. Accept: */*) doesn't match
+# what real Chrome sends. These values are taken straight from a live Chrome
+# request to match the bot-detection fingerprint.
+DEFAULT_REQUEST_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate",  # no brotli — Scrapy decodes gzip/deflate natively
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-User": "?1",
+    "Sec-Fetch-Dest": "document",
+}
+
+# Retry on 403/429/5xx so a single transient block doesn't kill the crawl.
+RETRY_ENABLED = True
+RETRY_TIMES = 2
+RETRY_HTTP_CODES = [403, 429, 500, 502, 503, 504]
+
 
 # --- Pipelines ---
+# StoragePipeline runs first (uploads HTML + computes hash), then MongoPipeline
+# upserts the metadata. Lower number = earlier in the chain.
 ITEM_PIPELINES = {
+    "compass_scraper.pipelines.StoragePipeline": 200,
     "compass_scraper.pipelines.MongoPipeline": 300,
 }
 
@@ -56,6 +79,16 @@ ITEM_PIPELINES = {
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB = os.getenv("MONGO_DB", "compass")
 MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "jobs")
+MONGO_COLLECTION_PROCESSED = os.getenv("MONGO_COLLECTION_PROCESSED", "jobs_processed")
+
+
+# --- MinIO (env-driven) ---
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minio")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minio12345")
+MINIO_SECURE = os.getenv("MINIO_SECURE", "false").lower() == "true"
+MINIO_BUCKET_LANDING = os.getenv("MINIO_BUCKET_LANDING", "compass-landing")
+MINIO_BUCKET_PROCESSED = os.getenv("MINIO_BUCKET_PROCESSED", "compass-processed")
 
 
 # --- Encoding ---

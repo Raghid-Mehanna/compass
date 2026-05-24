@@ -1,5 +1,8 @@
+argon2-cffi==25.1.0
+argon2-cffi-bindings==25.1.0
 attrs==26.1.0
 Automat==25.4.16
+beautifulsoup4==4.14.3
 certifi==2026.5.20
 cffi==2.0.0
 charset-normalizer==3.4.7
@@ -17,6 +20,7 @@ itemadapter==0.13.1
 itemloaders==1.4.0
 jmespath==1.1.0
 lxml==6.1.1
+minio==7.2.20
 packaging==26.2
 parsel==1.11.0
 playwright==1.60.0
@@ -24,6 +28,7 @@ Protego==0.6.0
 pyasn1==0.6.3
 pyasn1_modules==0.4.2
 pycparser==3.0
+pycryptodome==3.23.0
 PyDispatcher==2.0.7
 pyee==13.0.1
 pymongo==4.17.0
@@ -36,6 +41,7 @@ requests-file==3.0.1
 Scrapy==2.11.2
 scrapy-playwright==0.0.46
 service-identity==24.2.0
+soupsieve==2.8.3
 tldextract==5.3.1
 tomli==2.4.1
 Twisted==23.10.0

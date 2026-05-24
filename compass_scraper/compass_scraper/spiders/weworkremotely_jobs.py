@@ -12,29 +12,50 @@ class WeWorkRemotelyJobsSpider(scrapy.Spider):
     ]
 
     def parse(self, response):
-        """Extract listings from a WeWorkRemotely category page.
-
-        Real listings are `li.new-listing-container` without the `listing-ad`
-        class. Sponsored ad rows share most of the markup, so the negative
-        class selector is what keeps junk out of Mongo.
-        """
         scraped_at = datetime.now(timezone.utc).isoformat()
+        partition_date = datetime.now(timezone.utc).date().isoformat()
 
         for li in response.css("li.new-listing-container:not(.listing-ad)"):
             href = li.css("a.listing-link--unlocked::attr(href)").get()
             if not href:
                 continue
 
-            # The slug uniquely identifies a posting, e.g.
-            # "/remote-jobs/nomad-senior-software-engineer-ii" -> "nomad-senior-software-engineer-ii"
             post_id = href.rsplit("/", 1)[-1]
+            company_raw = li.css('a[target="company"] span.font-bold::text').get()
+            company = company_raw.replace("\xa0", " ").strip() if company_raw else None
+            title = li.css("span.new-listing__header__title__text::text").get()
+            absolute_url = response.urljoin(href)
 
-            item = JobItem()
-            item["post_id"] = post_id
-            item["source"] = "weworkremotely"
-            item["title"] = li.css("span.new-listing__header__title__text::text").get()
-            item["url"] = response.urljoin(href)
-            item["domain"] = "weworkremotely.com"
-            item["company"] = (li.css("p.new-listing__company-name::text").get() or "").strip() or None
-            item["scraped_at"] = scraped_at
-            yield item
+            yield scrapy.Request(
+                absolute_url,
+                callback=self.parse_detail,
+                # WWR is behind Cloudflare with TLS fingerprinting that 403s
+                # any standard HTTP client (Scrapy/curl-without-impersonation).
+                # A real browser passes through, so route detail requests via
+                # Playwright. The index page itself loads fine without it.
+                meta={"playwright": True},
+                cb_kwargs={
+                    "metadata": {
+                        "post_id": post_id,
+                        "source": "weworkremotely",
+                        "title": title,
+                        "url": absolute_url,
+                        "domain": "weworkremotely.com",
+                        "company": company,
+                        "scraped_at": scraped_at,
+                        "partition_date": partition_date,
+                    }
+                },
+                errback=self.detail_failed,
+            )
+
+    def parse_detail(self, response, metadata):
+        item = JobItem(**metadata)
+        item["_html_body"] = response.body
+        yield item
+
+    def detail_failed(self, failure):
+        self.logger.warning(
+            "Detail-page fetch failed: %s — %s",
+            failure.request.url, failure.value,
+        )
