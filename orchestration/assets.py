@@ -28,7 +28,7 @@ from dagster import AssetIn, MaterializeResult, asset
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SCRAPER_DIR = PROJECT_ROOT / "compass_scraper"
+SCRAPER_DIR = PROJECT_ROOT / "scraper"
 
 
 def _run_spider(spider_name: str, context) -> MaterializeResult:

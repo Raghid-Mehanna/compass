@@ -39,7 +39,7 @@ from pymongo import MongoClient
 
 # Make compass_scraper importable so we reuse MinioStorage + sha256_hex.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "compass_scraper"))
+sys.path.insert(0, str(PROJECT_ROOT / "scraper"))
 
 from compass_scraper.storage import MinioStorage, sha256_hex  # noqa: E402
 from compass_scraper.logging_setup import configure_json_logging  # noqa: E402

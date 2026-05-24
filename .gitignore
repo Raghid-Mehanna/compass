@@ -150,6 +150,10 @@ activemq-data/
 # Environments
 .env
 .envrc
+
+# Dagster
+.tmp_dagster_home*/
+dagster.yaml
 .venv
 env/
 venv/
