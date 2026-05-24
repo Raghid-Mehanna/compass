@@ -1,0 +1,11 @@
+# Dagster workspace file. Tells `dagster dev` where to find our Definitions.
+# Run from the project root:
+#
+#     dagster dev
+#
+# Then open http://localhost:3000 to see the asset graph and trigger runs.
+
+load_from:
+  - python_module:
+      module_name: orchestration.definitions
+      working_directory: .
