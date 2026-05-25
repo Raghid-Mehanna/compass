@@ -24,7 +24,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dagster import AssetIn, MaterializeResult, asset
+from dagster import MaterializeResult, asset
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -79,20 +79,13 @@ def waas_landing(context) -> MaterializeResult:
 @asset(
     group_name="processed",
     description="Clean HTML stripped of nav/header/footer; metadata in jobs_processed.",
-    ins={
-        # Declared dependencies — Dagster will only materialize this asset
-        # once all three landing assets succeed.
-        "hn_landing": AssetIn(),
-        "wwr_landing": AssetIn(),
-        "waas_landing": AssetIn(),
-    },
+    # Use deps= (not ins=) because the landing assets produce side effects
+    # (writes to Mongo + MinIO), not return values. ins= would make Dagster's
+    # I/O manager try to load a non-existent output file and crash with
+    # FileNotFoundError.
+    deps=[hn_landing, wwr_landing, waas_landing],
 )
-def processed_jobs(
-    context,
-    hn_landing,
-    wwr_landing,
-    waas_landing,
-) -> MaterializeResult:
+def processed_jobs(context) -> MaterializeResult:
     """Run the transformer over all landing docs.
 
     Invoked in-process (no subprocess) because transformer is a plain Python
